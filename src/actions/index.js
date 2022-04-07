@@ -17,14 +17,32 @@ export const fetchPosts = () => {
 //   };
 // };
 
-// Used lodash memoize to prevent running duplicate queries for the same userId
-export const fetchUser = (id) => {
-  return (dispatch) => {
-    _fetchUser(id, dispatch);
+// 2nd version of fetchUser
+// Uses lodash memoize to prevent running duplicate queries for the same userId
+// Downside: Will never allow re-fetching the same userId
+// export const fetchUser = (id) => {
+//   return (dispatch) => {
+//     _fetchUser(id, dispatch);
+//   };
+// };
+
+// const _fetchUser = _.memoize(async (id, dispatch) => {
+//   const response = await jsonPlaceholder.get(`/users/${id}`);
+//   dispatch({ type: "FETCH_USER", payload: response.data });
+// });
+
+// 3rd version
+export const fetchPostsAndUsers = () => {
+  return async (dispatch, getState) => {
+    await dispatch(fetchPosts());
+    const userIds = _.uniq(_.map(getState().posts, "userId"));
+    userIds.forEach((id) => dispatch(fetchUser(id)));
   };
 };
 
-const _fetchUser = _.memoize(async (id, dispatch) => {
-  const response = await jsonPlaceholder.get(`/users/${id}`);
-  dispatch({ type: "FETCH_USER", payload: response.data });
-});
+export const fetchUser = (id) => {
+  return async (dispatch) => {
+    const response = await jsonPlaceholder.get(`/users/${id}`);
+    dispatch({ type: "FETCH_USER", payload: response.data });
+  };
+};
